@@ -42,15 +42,21 @@ struct ContentView: View {
             Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 8) {
                 GridRow {
                     Text("Source")
-                    PathField(placeholder: "/path/to/source or user@host:/path — or drop a file/folder here",
-                              text: $config.source)
-                    Button("Choose…") { choosePath(into: $config.source) }
+                    TextField("/path/to/source or user@host:/path", text: $config.source)
+                        .textFieldStyle(.roundedBorder)
+                    HStack(spacing: 8) {
+                        Button("Choose…") { choosePath(into: $config.source) }
+                        DropWell(text: $config.source)
+                    }
                 }
                 GridRow {
                     Text("Destination")
-                    PathField(placeholder: "/path/to/destination or user@host:/path — or drop a folder here",
-                              text: $config.destination)
-                    Button("Choose…") { choosePath(into: $config.destination) }
+                    TextField("/path/to/destination or user@host:/path", text: $config.destination)
+                        .textFieldStyle(.roundedBorder)
+                    HStack(spacing: 8) {
+                        Button("Choose…") { choosePath(into: $config.destination) }
+                        DropWell(text: $config.destination)
+                    }
                 }
                 GridRow {
                     Color.clear.frame(width: 0, height: 0)
@@ -230,21 +236,33 @@ struct ContentView: View {
     }
 }
 
-/// A path text field that also accepts a file or folder dragged in from the Finder.
-struct PathField: View {
-    let placeholder: String
+/// A visible drop target: drag a file or folder from the Finder onto it to set the path.
+/// (A plain text field handles drops itself and inserts the path as text, so a separate
+/// well is used to replace the whole value instead.)
+struct DropWell: View {
     @Binding var text: String
     @State private var isTargeted = false
 
     var body: some View {
-        TextField(placeholder, text: $text)
-            .textFieldStyle(.roundedBorder)
-            .overlay(
-                RoundedRectangle(cornerRadius: 6)
-                    .stroke(Color.accentColor, lineWidth: 2)
-                    .opacity(isTargeted ? 1 : 0)
-            )
-            .onDrop(of: [.fileURL], isTargeted: $isTargeted) { providers in
+        HStack(spacing: 5) {
+            Image(systemName: "arrow.down.doc")
+            Text("Drop file or folder here")
+        }
+        .font(.callout)
+        .foregroundStyle(isTargeted ? Color.accentColor : Color.secondary)
+        .padding(.horizontal, 10)
+        .frame(height: 22)
+        .background(
+            RoundedRectangle(cornerRadius: 6)
+                .fill(isTargeted ? Color.accentColor.opacity(0.2) : Color.secondary.opacity(0.08))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 6)
+                .strokeBorder(isTargeted ? Color.accentColor : Color.secondary.opacity(0.5),
+                              style: StrokeStyle(lineWidth: 1, dash: [4, 3]))
+        )
+        .help("Drop a file or folder here to use its path")
+        .onDrop(of: [.fileURL], isTargeted: $isTargeted) { providers in
                 guard let provider = providers.first(where: { $0.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) }) else {
                     return false
                 }

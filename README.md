@@ -8,8 +8,8 @@ Output streams live into the window and can be stopped at any time.
 
 ## Features
 
-- Source and destination fields accept a file or folder dragged from the
-  Finder, as well as typed paths and the Choose… dialog.
+- Each path row has a dashed "Drop file or folder here" well; drag from the
+  Finder onto it to set the path (typed paths and Choose… also work).
 - Checkboxes for the common rsync options, grouped as Common, Preserve,
   Transfer, Deletion and Output, each with a tooltip explaining the flag.
 - Exclude patterns, remote shell (`-e`), bandwidth limit and free-form extra
