@@ -1,5 +1,6 @@
 import SwiftUI
 import AppKit
+import UniformTypeIdentifiers
 
 struct ContentView: View {
     @StateObject private var config = RsyncConfig.load()
@@ -41,14 +42,14 @@ struct ContentView: View {
             Grid(alignment: .leading, horizontalSpacing: 10, verticalSpacing: 8) {
                 GridRow {
                     Text("Source")
-                    TextField("/path/to/source or user@host:/path", text: $config.source)
-                        .textFieldStyle(.roundedBorder)
+                    PathField(placeholder: "/path/to/source or user@host:/path — or drop a file/folder here",
+                              text: $config.source)
                     Button("Choose…") { choosePath(into: $config.source) }
                 }
                 GridRow {
                     Text("Destination")
-                    TextField("/path/to/destination or user@host:/path", text: $config.destination)
-                        .textFieldStyle(.roundedBorder)
+                    PathField(placeholder: "/path/to/destination or user@host:/path — or drop a folder here",
+                              text: $config.destination)
                     Button("Choose…") { choosePath(into: $config.destination) }
                 }
                 GridRow {
@@ -226,6 +227,33 @@ struct ContentView: View {
         if panel.runModal() == .OK, let url = panel.url {
             config.rsyncPath = url.path
         }
+    }
+}
+
+/// A path text field that also accepts a file or folder dragged in from the Finder.
+struct PathField: View {
+    let placeholder: String
+    @Binding var text: String
+    @State private var isTargeted = false
+
+    var body: some View {
+        TextField(placeholder, text: $text)
+            .textFieldStyle(.roundedBorder)
+            .overlay(
+                RoundedRectangle(cornerRadius: 6)
+                    .stroke(Color.accentColor, lineWidth: 2)
+                    .opacity(isTargeted ? 1 : 0)
+            )
+            .onDrop(of: [.fileURL], isTargeted: $isTargeted) { providers in
+                guard let provider = providers.first(where: { $0.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier) }) else {
+                    return false
+                }
+                provider.loadDataRepresentation(forTypeIdentifier: UTType.fileURL.identifier) { data, _ in
+                    guard let data, let url = URL(dataRepresentation: data, relativeTo: nil) else { return }
+                    DispatchQueue.main.async { text = url.path }
+                }
+                return true
+            }
     }
 }
 
